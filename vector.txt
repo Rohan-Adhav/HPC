@@ -1,0 +1,64 @@
+%%writefile filename.cu
+#include<iostream>
+#include<vector>
+#include<cuda.h>
+#include<chrono>
+#define N 2
+using namespace std::chrono;
+using namespace std;
+
+
+__global__ void VectorAdd(int *da, int *db, int *dc)
+{
+    int idx = threadIdx.x + (blockIdx.x * blockDim.x);
+    if (idx < N) {
+        dc[idx] = da[idx] * db[idx];
+    }
+}
+
+int main() {
+    int size = N * sizeof(int);
+
+    int *ha, *hb, *hc;
+    int *da, *db, *dc;
+
+    ha = (int*)malloc(size);
+    hb = (int*)malloc(size);
+    hc = (int*)malloc(size);
+
+    cudaMalloc(&da, size);
+    cudaMalloc(&db, size);
+    cudaMalloc(&dc, size);
+
+    for (int i = 0; i < N; i++) {
+        cout << "Enter Element " << i+1 << " of Vector1: ";
+        cin >> ha[i];
+        cout << "Enter Element " << i+1 << " of Vector2: ";
+        cin >> hb[i];
+    }
+
+    cudaMemcpy(da, ha, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(db, hb, size, cudaMemcpyHostToDevice);
+    // No need to copy 'hc' to 'dc' before kernel, because 'dc' will be overwritten.
+
+    VectorAdd<<<1, N>>>(da, db, dc); // Only need 1 block of N threads.
+
+    cudaMemcpy(hc, dc, size, cudaMemcpyDeviceToHost);
+
+    cout << "Resultant Vector: ";
+    for (int i = 0; i < N; i++) {
+        cout << hc[i] << " ";
+    }
+    cout << endl;
+
+    free(ha);
+    free(hb);
+    free(hc);
+    cudaFree(da);
+    cudaFree(db);
+    cudaFree(dc);
+
+    return 0;
+}
+!nvcc -arch=sm_75 -o filename filename.cu
+!./filename
