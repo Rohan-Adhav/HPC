@@ -63,3 +63,5 @@ int main() {
 
     return 0;
 }
+!nvcc -arch=sm_75 -o filename filename.cu
+!./filename
